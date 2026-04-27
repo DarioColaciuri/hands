@@ -1,20 +1,41 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Hand Music</title>
 
   <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: black;
+    * {
+      box-sizing: border-box;
     }
 
-    video, canvas {
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      background: black;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+    }
+
+    .camera-stack {
+      position: relative;
+      width: 640px;
+      height: 480px;
+      flex-shrink: 0;
+    }
+
+    .camera-stack video,
+    .camera-stack canvas {
       position: absolute;
       top: 0;
       left: 0;
+      width: 640px;
+      height: 480px;
     }
 
     .sound-panel {
@@ -27,8 +48,8 @@
       flex-direction: row;
       gap: 10px;
       width: 640px;
+      max-width: calc(100vw - 24px);
       pointer-events: auto;
-      box-sizing: border-box;
     }
 
     .sound-btn {
@@ -53,12 +74,240 @@
       background: rgba(255, 255, 255, 0.2);
       border-color: white;
     }
+
+    .help-btn {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 50;
+      padding: 10px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.55);
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .help-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .glossary-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: min(400px, 96vw);
+      height: 100vh;
+      z-index: 40;
+      background: #121212;
+      border-left: 1px solid rgba(255, 255, 255, 0.22);
+      box-shadow: -8px 0 28px rgba(0, 0, 0, 0.45);
+      transform: translateX(100%);
+      transition: transform 0.28s ease;
+      display: flex;
+      flex-direction: column;
+      pointer-events: none;
+    }
+
+    .glossary-drawer.is-open {
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+
+    .glossary-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      flex-shrink: 0;
+    }
+
+    .glossary-header h2 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .glossary-close {
+      border: none;
+      background: transparent;
+      color: #fff;
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .glossary-close:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .glossary-body {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 14px 16px 20px;
+      font-size: 13px;
+      line-height: 1.45;
+      color: rgba(255, 255, 255, 0.88);
+    }
+
+    .glossary-body h3 {
+      margin: 16px 0 8px;
+      font-size: 14px;
+      color: #fff;
+    }
+
+    .glossary-body h3:first-child {
+      margin-top: 0;
+    }
+
+    .glossary-body p {
+      margin: 0 0 10px;
+      color: rgba(255, 255, 255, 0.82);
+    }
+
+    .glossary-body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0 14px;
+      font-size: 12px;
+    }
+
+    .glossary-body th,
+    .glossary-body td {
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      padding: 6px 8px;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    .glossary-body th {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    .glossary-body td:first-child {
+      white-space: nowrap;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .glossary-body td.hand-col {
+      width: 92px;
+      text-align: center;
+      vertical-align: middle;
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    .hand-svg {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hand-svg svg {
+      display: block;
+      max-width: 100%;
+    }
+
+    .glossary-note {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.55);
+      margin-top: 12px;
+    }
   </style>
 </head>
 <body>
 
-<video id="video" autoplay playsinline></video>
-<canvas id="canvas"></canvas>
+<div class="camera-stack">
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas"></canvas>
+</div>
+
+<button type="button" class="help-btn" id="glossary-open" aria-haspopup="dialog" aria-controls="glossary-drawer">
+  Glosario
+</button>
+
+<div class="glossary-drawer" id="glossary-drawer" role="dialog" aria-modal="true" aria-labelledby="glossary-title">
+  <div class="glossary-header">
+    <h2 id="glossary-title">Glosario de gestos</h2>
+    <button type="button" class="glossary-close" id="glossary-close" aria-label="Cerrar">&times;</button>
+  </div>
+  <div class="glossary-body">
+    <p style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:0">Verde = arriba · gris = abajo. <strong>P</strong> pulgar, <strong>I</strong> índice, <strong>M</strong> medio, <strong>A</strong> anular, <strong>Meñ</strong> meñique.</p>
+
+    <h3>Mano derecha — nota</h3>
+    <table>
+      <thead>
+        <tr><th>Nota</th><th>Gesto</th><th>Figura</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>C</td><td>Sin pulgar; los cuatro dedos abajo</td><td class="hand-col"><span class="hand-svg" data-hand="00000"></span></td></tr>
+        <tr><td>D</td><td>Solo pulgar arriba</td><td class="hand-col"><span class="hand-svg" data-hand="10000"></span></td></tr>
+        <tr><td>E</td><td>Pulgar + índice</td><td class="hand-col"><span class="hand-svg" data-hand="11000"></span></td></tr>
+        <tr><td>F</td><td>Pulgar + índice + medio</td><td class="hand-col"><span class="hand-svg" data-hand="11100"></span></td></tr>
+        <tr><td>G</td><td>Pulgar + índice + medio + anular (meñique abajo)</td><td class="hand-col"><span class="hand-svg" data-hand="11110"></span></td></tr>
+        <tr><td>A</td><td>Pulgar + los cuatro dedos arriba</td><td class="hand-col"><span class="hand-svg" data-hand="11111"></span></td></tr>
+        <tr><td>B</td><td>Pulgar + solo meñique arriba</td><td class="hand-col"><span class="hand-svg" data-hand="10001"></span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Mano derecha — sostenido</h3>
+    <table>
+      <thead>
+        <tr><th>Efecto</th><th>Gesto</th><th>Figura</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td># (sostenido)</td>
+          <td>Muñeca en la mitad <strong>superior</strong> del cuadro (solo C, D, F, G, A)</td>
+          <td class="hand-col"><span class="hand-svg" data-hand="wrist-up"></span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Mano izquierda — tipo de acorde</h3>
+    <table>
+      <thead>
+        <tr><th>Acorde</th><th>Gesto</th><th>Figura</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Mayor</td><td>Cuatro dedos abajo, pulgar abajo (puño relajado)</td><td class="hand-col"><span class="hand-svg" data-hand="00000"></span></td></tr>
+        <tr><td>Menor</td><td>Cuatro dedos arriba; el pulgar no importa (dibujo: pulgar abajo)</td><td class="hand-col"><span class="hand-svg" data-hand="01111"></span></td></tr>
+        <tr><td>Disminuido</td><td>Solo índice arriba; pulgar abajo</td><td class="hand-col"><span class="hand-svg" data-hand="01000"></span></td></tr>
+        <tr><td>Aumentado</td><td>Solo pulgar arriba; índice, medio, anular y meñique abajo</td><td class="hand-col"><span class="hand-svg" data-hand="10000"></span></td></tr>
+        <tr><td>Maj7</td><td>Pulgar + meñique arriba; índice, medio y anular abajo</td><td class="hand-col"><span class="hand-svg" data-hand="10001"></span></td></tr>
+        <tr><td>7</td><td>Índice + medio arriba; pulgar abajo</td><td class="hand-col"><span class="hand-svg" data-hand="01100"></span></td></tr>
+        <tr><td>m7</td><td>Solo meñique arriba; pulgar abajo</td><td class="hand-col"><span class="hand-svg" data-hand="00001"></span></td></tr>
+        <tr><td>m7(b5)</td><td>Índice + meñique arriba; pulgar abajo</td><td class="hand-col"><span class="hand-svg" data-hand="01001"></span></td></tr>
+        <tr><td>dim7</td><td>Pulgar + índice + medio + anular arriba; <strong>solo meñique abajo</strong></td><td class="hand-col"><span class="hand-svg" data-hand="11110"></span></td></tr>
+      </tbody>
+    </table>
+    <p>Otras combinaciones no válidas no suenan hasta que el gesto sea claro.</p>
+
+    <h3>Mano izquierda — cutoff / tono</h3>
+    <table>
+      <thead>
+        <tr><th>Control</th><th>Gesto</th><th>Figura</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Cutoff −100…+100</td>
+          <td>Altura de la <strong>muñeca</strong> (arriba / centro / abajo en el rango útil)</td>
+          <td class="hand-col"><span class="hand-svg" data-hand="cutoff-y"></span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="glossary-note">El acorde suena cuando hay nota estable (<strong>mano derecha</strong>) y tipo de acorde válido (<strong>mano izquierda</strong>) a la vez.</p>
+  </div>
+</div>
 
 <div class="sound-panel">
   <button class="sound-btn active" data-preset-index="0">Sound 1</button>
@@ -74,6 +323,124 @@
 <!-- MediaPipe (IMPORTANTE) -->
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
+<script>
+  (function () {
+    const STROKE_UP = "#5fd488";
+    const STROKE_DOWN = "#5c5c5c";
+    const PALM_FILL = "#242424";
+    const PALM_STROKE = "#666";
+
+    function createHandSVG(code) {
+      const th = code[0] === "1";
+      const idx = code[1] === "1";
+      const mid = code[2] === "1";
+      const ring = code[3] === "1";
+      const pnk = code[4] === "1";
+      const baseY = 82;
+      const curl = 14;
+      const hIdx = 40;
+      const hMid = 48;
+      const hRing = 36;
+      const hPnk = 26;
+      const swNorm = 5;
+      const swPnk = 3.2;
+      const swThumb = 6.5;
+
+      const finger = (x, ext, hUp, sw) => {
+        const h = ext ? hUp : curl;
+        const c = ext ? STROKE_UP : STROKE_DOWN;
+        return `<line x1="${x}" y1="${baseY}" x2="${x}" y2="${baseY - h}" stroke="${c}" stroke-width="${sw}" stroke-linecap="round"/>`;
+      };
+
+      const thumb = th
+        ? `<path d="M 42 ${baseY} C 28 78 14 62 8 46 C 6 40 12 34 18 38" stroke="${STROKE_UP}" stroke-width="${swThumb}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+        : `<path d="M 42 ${baseY} C 36 76 32 72 30 66 C 28 62 32 58 36 60" stroke="${STROKE_DOWN}" stroke-width="5.2" fill="none" stroke-linecap="round"/>`;
+
+      const palm = `<path d="M 46 ${baseY + 2} C 44 88 52 94 68 94 C 88 94 98 88 96 ${baseY + 2} C 94 76 52 72 46 ${baseY + 2} Z" fill="${PALM_FILL}" stroke="${PALM_STROKE}" stroke-width="1.4"/>`;
+
+      const labels = `
+        <text x="12" y="104" text-anchor="middle" fill="#7adb9a" font-size="9" font-weight="bold" font-family="Arial,sans-serif">P</text>
+        <text x="50" y="104" text-anchor="middle" fill="#999" font-size="8" font-family="Arial,sans-serif">I</text>
+        <text x="64" y="104" text-anchor="middle" fill="#999" font-size="8" font-family="Arial,sans-serif">M</text>
+        <text x="78" y="104" text-anchor="middle" fill="#999" font-size="8" font-family="Arial,sans-serif">A</text>
+        <text x="94" y="104" text-anchor="middle" fill="#7adb9a" font-size="9" font-weight="bold" font-family="Arial,sans-serif">Meñ</text>
+      `;
+
+      return `<svg viewBox="0 0 108 112" width="80" height="82" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+        ${palm}
+        ${thumb}
+        ${finger(50, idx, hIdx, swNorm)}
+        ${finger(64, mid, hMid, swNorm)}
+        ${finger(78, ring, hRing, swNorm)}
+        ${finger(92, pnk, hPnk, swPnk)}
+        ${labels}
+      </svg>`;
+    }
+
+    function wristUpSVG() {
+      return `<svg viewBox="0 0 108 96" width="76" height="68" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <text x="54" y="20" text-anchor="middle" fill="#5fd488" font-size="12" font-family="Arial,sans-serif">arriba</text>
+        <path d="M 54 78 L 54 32" stroke="#888" stroke-width="2" stroke-dasharray="4 3"/>
+        <polygon points="54,26 48,36 60,36" fill="#5fd488"/>
+        <ellipse cx="54" cy="78" rx="24" ry="11" fill="${PALM_FILL}" stroke="${PALM_STROKE}" stroke-width="1.5"/>
+        <line x1="46" y1="72" x2="44" y2="50" stroke="${STROKE_DOWN}" stroke-width="4" stroke-linecap="round"/>
+        <line x1="54" y1="70" x2="54" y2="48" stroke="${STROKE_DOWN}" stroke-width="4" stroke-linecap="round"/>
+        <line x1="62" y1="72" x2="64" y2="50" stroke="${STROKE_DOWN}" stroke-width="4" stroke-linecap="round"/>
+        <text x="54" y="94" text-anchor="middle" fill="#888" font-size="10" font-family="Arial,sans-serif">muñeca alta</text>
+      </svg>`;
+    }
+
+    function cutoffYSVG() {
+      return `<svg viewBox="0 0 108 96" width="76" height="68" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <marker id="cutoff-arr-up" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto">
+            <path d="M0,0 L7,3.5 L0,7 Z" fill="#5fd488"/>
+          </marker>
+          <marker id="cutoff-arr-down" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto">
+            <path d="M7,0 L0,3.5 L7,7 Z" fill="#5fd488"/>
+          </marker>
+        </defs>
+        <text x="30" y="18" text-anchor="middle" fill="#aaa" font-size="10" font-family="Arial,sans-serif">+100</text>
+        <line x1="30" y1="24" x2="30" y2="72" stroke="#777" stroke-width="2" marker-start="url(#cutoff-arr-down)" marker-end="url(#cutoff-arr-up)"/>
+        <text x="30" y="88" text-anchor="middle" fill="#aaa" font-size="10" font-family="Arial,sans-serif">−100</text>
+        <ellipse cx="72" cy="48" rx="18" ry="11" fill="${PALM_FILL}" stroke="${PALM_STROKE}" stroke-width="1.5"/>
+        <text x="72" y="52" text-anchor="middle" fill="#bbb" font-size="9" font-family="Arial,sans-serif">muñeca</text>
+      </svg>`;
+    }
+
+    function fillHandDiagrams() {
+      document.querySelectorAll(".hand-svg").forEach((el) => {
+        const code = el.getAttribute("data-hand") || "";
+        if (code === "wrist-up") el.innerHTML = wristUpSVG();
+        else if (code === "cutoff-y") el.innerHTML = cutoffYSVG();
+        else if (/^[01]{5}$/.test(code)) el.innerHTML = createHandSVG(code);
+      });
+    }
+
+    fillHandDiagrams();
+
+    const openBtn = document.getElementById("glossary-open");
+    const drawer = document.getElementById("glossary-drawer");
+    const closeBtn = document.getElementById("glossary-close");
+
+    function openGlossary() {
+      drawer.classList.add("is-open");
+      closeBtn.focus();
+    }
+
+    function closeGlossary() {
+      drawer.classList.remove("is-open");
+      openBtn.focus();
+    }
+
+    openBtn.addEventListener("click", openGlossary);
+    closeBtn.addEventListener("click", closeGlossary);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && drawer.classList.contains("is-open")) closeGlossary();
+    });
+  })();
+</script>
 
 <!-- Tu código (SIN module) -->
 <script src="./main.js"></script>

@@ -250,31 +250,64 @@ function formatNoteDisplay(note) {
   return map[note] || note;
 }
 
+// Mano de acordes (derecha): pulgar + índice/medio/anular/meñique (extendido = arriba).
+// Pulgar: mismo criterio que getFingers (mano derecha).
+// Mayor: los 4 dedos abajo. Solo pulgar arriba + resto abajo = Aumentado.
+// Menor: los 4 dedos arriba (pulgar da igual).
+// Dim: solo índice (pulgar abajo) | m7: solo meñique | 7: índice+medio | m7(b5): índice+meñique
+// Pulgar arriba: Maj7 = pulgar + meñique (resto abajo)
+// dim7: pulgar + índice + medio + anular arriba, meñique abajo (cómodo, tres dedos + pulgar)
 function getChordType(f) {
-  const fingers = [f.index, f.middle, f.ring, f.pinky];
-  const count = fingers.filter(Boolean).length;
+  const th = f.thumb;
+  const idx = f.index;
+  const mid = f.middle;
+  const ring = f.ring;
+  const pnk = f.pinky;
 
-  if (count === 0) return "Major";
-  if (count === 4) return "Minor";
+  if (th && !idx && !mid && !ring && !pnk) return "Augmented";
+  if (th && !idx && !mid && !ring && pnk) return "Maj7";
+  if (th && idx && mid && ring && !pnk) return "dim7";
+
+  if (!idx && !mid && !ring && !pnk) return "Major";
+  if (idx && mid && ring && pnk) return "Minor";
+
+  if (!th && idx && !mid && !ring && !pnk) return "Diminished";
+  if (!th && !idx && !mid && !ring && pnk) return "m7";
+  if (!th && idx && mid && !ring && !pnk) return "7";
+  if (!th && idx && !mid && !ring && pnk) return "m7(b5)";
 
   return null;
 }
 
-function buildChord(root, type) {
-  const scale = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
-  const i = scale.indexOf(root);
+const CHROMATIC = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 
+const CHORD_SEMITONES = {
+  Major: [0, 4, 7],
+  Minor: [0, 3, 7],
+  Diminished: [0, 3, 6],
+  Augmented: [0, 4, 8],
+  Maj7: [0, 4, 7, 11],
+  m7: [0, 3, 7, 10],
+  "7": [0, 4, 7, 10],
+  dim7: [0, 3, 6, 9],
+  "m7(b5)": [0, 3, 6, 10]
+};
+
+function midiToNoteString(midi) {
+  const pc = ((midi % 12) + 12) % 12;
+  const octave = Math.floor(midi / 12) - 1;
+  return CHROMATIC[pc] + octave;
+}
+
+function buildChord(root, type) {
+  const i = CHROMATIC.indexOf(root);
   if (i === -1) return [];
 
-  if (type === "Major") {
-    return [scale[i]+"4", scale[(i+4)%12]+"4", scale[(i+7)%12]+"4"];
-  }
+  const intervals = CHORD_SEMITONES[type];
+  if (!intervals) return [];
 
-  if (type === "Minor") {
-    return [scale[i]+"4", scale[(i+3)%12]+"4", scale[(i+7)%12]+"4"];
-  }
-
-  return [];
+  const rootMidi = 60 + i;
+  return intervals.map((semi) => midiToNoteString(rootMidi + semi));
 }
 
 // ----------------------
