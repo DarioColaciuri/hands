@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hand Music</title>
+
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: black;
+    }
+
+    video, canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .sound-panel {
+      position: fixed;
+      left: 50%;
+      bottom: 12px;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+      width: 640px;
+      pointer-events: auto;
+      box-sizing: border-box;
+    }
+
+    .sound-btn {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.55);
+      color: white;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .sound-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .sound-btn.active {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: white;
+    }
+  </style>
+</head>
+<body>
+
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas"></canvas>
+
+<div class="sound-panel">
+  <button class="sound-btn active" data-preset-index="0">Sound 1</button>
+  <button class="sound-btn" data-preset-index="1">Sound 2</button>
+  <button class="sound-btn" data-preset-index="2">Sound 3</button>
+  <button class="sound-btn" data-preset-index="3">Sound 4</button>
+  <button class="sound-btn" data-preset-index="4">Sound 5</button>
+</div>
+
+<!-- Tone -->
+<script src="https://unpkg.com/tone"></script>
+
+<!-- MediaPipe (IMPORTANTE) -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
+<!-- Tu código (SIN module) -->
+<script src="./main.js"></script>
+
+</body>
+</html>
