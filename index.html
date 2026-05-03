@@ -5,28 +5,116 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Hand Music</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
   <style>
-    * {
+    :root {
+      --bg-deep: #0a0a0c;
+      --bg-surface: #121216;
+      --bg-elevated: #1a1a1f;
+      --bg-glass: rgba(22, 22, 28, 0.75);
+      
+      --primary: #6366f1;
+      --primary-glow: rgba(99, 102, 241, 0.4);
+      --secondary: #22d3ee;
+      --secondary-glow: rgba(34, 211, 238, 0.3);
+      --accent: #a78bfa;
+      --accent-hover: #c4b5fd;
+      
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      
+      --success: #34d399;
+      --error: #f87171;
+      
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-medium: rgba(255, 255, 255, 0.15);
+      
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 20px;
+      
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.5);
+      --shadow-glow: 0 0 20px var(--primary-glow);
+      
+      --transition-fast: 120ms ease;
+      --transition-base: 200ms ease;
+      --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+      
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    *, *::before, *::after {
       box-sizing: border-box;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
     }
 
     body {
       margin: 0;
       min-height: 100vh;
-      overflow: hidden;
-      background: black;
+      background: var(--bg-deep);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-family: Arial, sans-serif;
+      font-family: var(--font-display);
+      color: var(--text-primary);
+      overflow: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: 
+        radial-gradient(ellipse 80% 50% at 50% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(34, 211, 238, 0.05) 0%, transparent 40%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app-container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
     }
 
     .camera-stack {
       position: relative;
       width: 640px;
       height: 480px;
+      max-width: calc(100vw - 32px);
+      max-height: calc(100vw * 0.75 - 32px);
       flex-shrink: 0;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-lg), inset 0 0 0 1px var(--border-subtle);
+    }
+
+    @media (max-width: 700px) {
+      .camera-stack {
+        width: 100%;
+        height: 75vw;
+        max-height: 75vw;
+        border-radius: var(--radius-md);
+      }
     }
 
     .camera-stack video,
@@ -36,79 +124,221 @@
       left: 0;
       width: 640px;
       height: 480px;
+      object-fit: cover;
+    }
+
+    @media (max-width: 700px) {
+      .camera-stack video,
+      .camera-stack canvas {
+        width: 100%;
+        height: 100%;
+      }
+    }
+
+    .canvas-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+      background: 
+        linear-gradient(180deg, rgba(10, 10, 12, 0.4) 0%, transparent 40px, transparent calc(100% - 60px), rgba(10, 10, 12, 0.6) 100%),
+        linear-gradient(90deg, rgba(10, 10, 12, 0.3) 0%, transparent 20px, transparent calc(100% - 20px), rgba(10, 10, 12, 0.3) 100%);
+    }
+
+    .canvas-grid {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.15;
+      background-image: 
+        linear-gradient(var(--border-subtle) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
+      background-size: 80px 80px;
+      mask-image: radial-gradient(ellipse 90% 90% at 50% 50%, black 60%, transparent 100%);
+    }
+
+    .top-bar {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      z-index: 50;
+      pointer-events: none;
+    }
+
+    .top-bar > * {
+      pointer-events: auto;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: var(--bg-glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      color: var(--text-secondary);
+      transition: all var(--transition-base);
+    }
+
+    .status-indicator .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      transition: all var(--transition-base);
+    }
+
+    .status-indicator.loading .dot {
+      background: var(--secondary);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    .status-indicator.ready {
+      border-color: rgba(52, 211, 153, 0.3);
+    }
+
+    .status-indicator.ready .dot {
+      background: var(--success);
+    }
+
+    .status-indicator.error {
+      border-color: rgba(248, 113, 113, 0.3);
+    }
+
+    .status-indicator.error .dot {
+      background: var(--error);
+    }
+
+    .status-indicator.hidden {
+      opacity: 0;
+      transform: translateY(-8px);
+      pointer-events: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.1); }
+    }
+
+    .glossary-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--bg-glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition-base);
+    }
+
+    .glossary-btn:hover {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .glossary-btn:active {
+      transform: translateY(0);
+    }
+
+    .glossary-btn svg {
+      width: 16px;
+      height: 16px;
+      opacity: 0.7;
     }
 
     .sound-panel {
       position: fixed;
+      bottom: 16px;
       left: 50%;
-      bottom: 12px;
       transform: translateX(-50%);
       z-index: 10;
       display: flex;
-      flex-direction: row;
-      gap: 10px;
-      width: 640px;
-      max-width: calc(100vw - 24px);
-      pointer-events: auto;
+      gap: 6px;
+      padding: 6px;
+      background: var(--bg-glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
     }
 
     .sound-btn {
-      flex: 1;
-      padding: 10px 12px;
-      border: 1px solid rgba(255, 255, 255, 0.45);
-      border-radius: 10px;
-      background: rgba(0, 0, 0, 0.55);
-      color: white;
-      font-family: Arial, sans-serif;
-      font-size: 14px;
-      text-align: left;
+      padding: 10px 16px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: var(--radius-md);
+      color: var(--text-muted);
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 500;
       cursor: pointer;
-      transition: background 0.15s ease, border-color 0.15s ease;
+      transition: all var(--transition-base);
+      white-space: nowrap;
     }
 
     .sound-btn:hover {
-      background: rgba(255, 255, 255, 0.12);
+      color: var(--text-secondary);
+      background: rgba(255, 255, 255, 0.04);
     }
 
     .sound-btn.active {
-      background: rgba(255, 255, 255, 0.2);
-      border-color: white;
-    }
-
-    .help-btn {
-      position: fixed;
-      top: 12px;
-      left: 12px;
-      z-index: 50;
-      padding: 10px 16px;
-      border: 1px solid rgba(255, 255, 255, 0.45);
-      border-radius: 10px;
-      background: rgba(0, 0, 0, 0.55);
+      background: var(--primary);
       color: white;
-      font-size: 14px;
-      cursor: pointer;
-      transition: background 0.15s ease, border-color 0.15s ease;
+      box-shadow: var(--shadow-glow);
     }
 
-    .help-btn:hover {
-      background: rgba(255, 255, 255, 0.12);
+    .sound-btn.active:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    @media (max-width: 600px) {
+      .sound-panel {
+        width: calc(100% - 32px);
+        max-width: 400px;
+        gap: 4px;
+        padding: 6px;
+      }
+      
+      .sound-btn {
+        padding: 10px 8px;
+        font-size: 12px;
+      }
     }
 
     .glossary-drawer {
       position: fixed;
       top: 0;
       right: 0;
-      width: min(400px, 96vw);
+      width: min(420px, 100vw);
       height: 100vh;
-      z-index: 40;
-      background: #121212;
-      border-left: 1px solid rgba(255, 255, 255, 0.22);
-      box-shadow: -8px 0 28px rgba(0, 0, 0, 0.45);
+      z-index: 100;
+      background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-deep) 100%);
+      border-left: 1px solid var(--border-subtle);
       transform: translateX(100%);
-      transition: transform 0.28s ease;
+      transition: transform var(--transition-slow);
       display: flex;
       flex-direction: column;
       pointer-events: none;
+      overflow: hidden;
     }
 
     .glossary-drawer.is-open {
@@ -116,93 +346,204 @@
       pointer-events: auto;
     }
 
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      background: transparent;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-base);
+    }
+
+    .drawer-backdrop.is-open {
+      opacity: 1;
+      pointer-events: none;
+    }
+
     .glossary-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 14px 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-subtle);
       flex-shrink: 0;
     }
 
     .glossary-header h2 {
       margin: 0;
-      font-size: 17px;
+      font-size: 18px;
       font-weight: 600;
-      color: #fff;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
     }
 
     .glossary-close {
-      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
       background: transparent;
-      color: #fff;
-      font-size: 22px;
-      line-height: 1;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      font-size: 18px;
       cursor: pointer;
-      padding: 4px 8px;
-      border-radius: 6px;
+      transition: all var(--transition-base);
     }
 
     .glossary-close:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.06);
+      border-color: var(--border-medium);
+      color: var(--text-primary);
     }
 
     .glossary-body {
       flex: 1;
       min-height: 0;
       overflow-y: auto;
-      padding: 14px 16px 20px;
-      font-size: 13px;
-      line-height: 1.45;
-      color: rgba(255, 255, 255, 0.88);
+      padding: 20px 24px 40px;
     }
 
-    .glossary-body h3 {
-      margin: 16px 0 8px;
-      font-size: 14px;
-      color: #fff;
+    .glossary-body::-webkit-scrollbar {
+      width: 6px;
     }
 
-    .glossary-body h3:first-child {
-      margin-top: 0;
+    .glossary-body::-webkit-scrollbar-track {
+      background: transparent;
     }
 
-    .glossary-body p {
-      margin: 0 0 10px;
-      color: rgba(255, 255, 255, 0.82);
+    .glossary-body::-webkit-scrollbar-thumb {
+      background: var(--border-medium);
+      border-radius: 3px;
     }
 
-    .glossary-body table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 8px 0 14px;
+    .glossary-intro {
       font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      padding: 12px 14px;
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.15);
+      border-radius: var(--radius-md);
+      line-height: 1.5;
     }
 
-    .glossary-body th,
-    .glossary-body td {
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      padding: 6px 8px;
-      text-align: left;
-      vertical-align: middle;
+    .glossary-intro strong {
+      color: var(--secondary);
+      font-weight: 500;
     }
 
-    .glossary-body th {
-      background: rgba(255, 255, 255, 0.08);
-      color: #fff;
+    .gesture-section {
+      margin-bottom: 28px;
     }
 
-    .glossary-body td:first-child {
-      white-space: nowrap;
+    .gesture-section h3 {
+      margin: 0 0 14px;
+      font-size: 13px;
       font-weight: 600;
-      color: #fff;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
     }
 
-    .glossary-body td.hand-col {
-      width: 92px;
-      text-align: center;
-      vertical-align: middle;
-      background: rgba(0, 0, 0, 0.25);
+    .gesture-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .gesture-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 14px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      transition: all var(--transition-base);
+    }
+
+    .gesture-card:hover {
+      border-color: var(--border-medium);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .gesture-card .note-name {
+      width: 36px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .gesture-card .gesture-desc {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    .gesture-card .hand-visual {
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gesture-card .hand-visual svg {
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    .chord-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 8px;
+    }
+
+    .chord-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      transition: all var(--transition-base);
+    }
+
+    .chord-item:hover {
+      border-color: var(--border-medium);
+    }
+
+    .chord-item .chord-name {
+      width: 70px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--secondary);
+    }
+
+    .chord-item .chord-visual {
+      width: 48px;
+      height: 48px;
+    }
+
+    .glossary-footer {
+      margin-top: 24px;
+      padding: 14px 16px;
+      background: rgba(34, 211, 238, 0.08);
+      border: 1px solid rgba(34, 211, 238, 0.15);
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .glossary-footer strong {
+      color: var(--text-secondary);
     }
 
     .hand-svg {
@@ -211,101 +552,122 @@
       justify-content: center;
     }
 
-    .hand-svg svg {
-      display: block;
-      max-width: 100%;
-    }
-
-    .glossary-note {
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.55);
-      margin-top: 12px;
+    @media (max-width: 480px) {
+      .glossary-drawer {
+        width: 100vw;
+      }
+      
+      .glossary-header {
+        padding: 16px 18px;
+      }
+      
+      .glossary-body {
+        padding: 16px 18px 32px;
+      }
+      
+      .gesture-card {
+        padding: 10px 12px;
+      }
+      
+      .gesture-card .hand-visual {
+        width: 48px;
+        height: 48px;
+      }
     }
   </style>
 </head>
 <body>
 
-<div class="camera-stack">
-  <video id="video" autoplay playsinline></video>
-  <canvas id="canvas"></canvas>
+<div class="drawer-backdrop" id="drawer-backdrop"></div>
+
+<div class="app-container">
+  <div class="camera-stack">
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas"></canvas>
+    <div class="canvas-grid"></div>
+    <div class="canvas-overlay"></div>
+  </div>
 </div>
 
-<button type="button" class="help-btn" id="glossary-open" aria-haspopup="dialog" aria-controls="glossary-drawer">
-  Glosario
-</button>
+<div class="top-bar">
+  <div class="status-indicator" id="camera-status">
+    <span class="dot"></span>
+    <span class="status-text">Iniciando...</span>
+  </div>
+  
+  <button type="button" class="glossary-btn" id="glossary-open">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+    </svg>
+    Glosario
+  </button>
+</div>
 
 <div class="glossary-drawer" id="glossary-drawer" role="dialog" aria-modal="true" aria-labelledby="glossary-title">
   <div class="glossary-header">
     <h2 id="glossary-title">Glosario de gestos</h2>
-    <button type="button" class="glossary-close" id="glossary-close" aria-label="Cerrar">&times;</button>
+    <button type="button" class="glossary-close" id="glossary-close" aria-label="Cerrar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M18 6L6 18M6 6l12 12"></path>
+      </svg>
+    </button>
   </div>
   <div class="glossary-body">
-    <p style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:0">Verde = arriba · gris = abajo. <strong>P</strong> pulgar, <strong>I</strong> índice, <strong>M</strong> medio, <strong>A</strong> anular, <strong>Meñ</strong> meñique.</p>
+    <p class="glossary-intro">
+      <strong>Verde</strong> = dedo arriba · <strong>Gris</strong> = dedo abajo<br>
+      P: Pulgar · I: Índice · M: Medio · A: Anular · Meñ: Meñique
+    </p>
 
-    <h3>Mano derecha — nota</h3>
-    <table>
-      <thead>
-        <tr><th>Nota</th><th>Gesto</th><th>Figura</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>C</td><td>Sin pulgar; los cuatro dedos abajo</td><td class="hand-col"><span class="hand-svg" data-hand="00000"></span></td></tr>
-        <tr><td>D</td><td>Solo pulgar arriba</td><td class="hand-col"><span class="hand-svg" data-hand="10000"></span></td></tr>
-        <tr><td>E</td><td>Pulgar + índice</td><td class="hand-col"><span class="hand-svg" data-hand="11000"></span></td></tr>
-        <tr><td>F</td><td>Pulgar + índice + medio</td><td class="hand-col"><span class="hand-svg" data-hand="11100"></span></td></tr>
-        <tr><td>G</td><td>Pulgar + índice + medio + anular (meñique abajo)</td><td class="hand-col"><span class="hand-svg" data-hand="11110"></span></td></tr>
-        <tr><td>A</td><td>Pulgar + los cuatro dedos arriba</td><td class="hand-col"><span class="hand-svg" data-hand="11111"></span></td></tr>
-        <tr><td>B</td><td>Pulgar + solo meñique arriba</td><td class="hand-col"><span class="hand-svg" data-hand="10001"></span></td></tr>
-      </tbody>
-    </table>
+    <div class="gesture-section">
+      <h3>Mano derecha — Notas</h3>
+      <div class="gesture-grid">
+        <div class="gesture-card"><span class="note-name">C</span><span class="gesture-desc">Sin pulgar; 4 dedos abajo</span><span class="hand-visual"><span class="hand-svg" data-hand="00000"></span></span></div>
+        <div class="gesture-card"><span class="note-name">D</span><span class="gesture-desc">Solo pulgar arriba</span><span class="hand-visual"><span class="hand-svg" data-hand="10000"></span></span></div>
+        <div class="gesture-card"><span class="note-name">E</span><span class="gesture-desc">Pulgar + índice</span><span class="hand-visual"><span class="hand-svg" data-hand="11000"></span></span></div>
+        <div class="gesture-card"><span class="note-name">F</span><span class="gesture-desc">Pulgar + índice + medio</span><span class="hand-visual"><span class="hand-svg" data-hand="11100"></span></span></div>
+        <div class="gesture-card"><span class="note-name">G</span><span class="gesture-desc">P + I + M + A (Meñ ↓)</span><span class="hand-visual"><span class="hand-svg" data-hand="11110"></span></span></div>
+        <div class="gesture-card"><span class="note-name">A</span><span class="gesture-desc">Pulgar + 4 dedos arriba</span><span class="hand-visual"><span class="hand-svg" data-hand="11111"></span></span></div>
+        <div class="gesture-card"><span class="note-name">B</span><span class="gesture-desc">Pulgar + solo meñique</span><span class="hand-visual"><span class="hand-svg" data-hand="10001"></span></span></div>
+      </div>
+    </div>
 
-    <h3>Mano derecha — sostenido</h3>
-    <table>
-      <thead>
-        <tr><th>Efecto</th><th>Gesto</th><th>Figura</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td># (sostenido)</td>
-          <td>Muñeca en la mitad <strong>superior</strong> del cuadro (solo C, D, F, G, A)</td>
-          <td class="hand-col"><span class="hand-svg" data-hand="wrist-up"></span></td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="gesture-section">
+      <h3>Mano derecha — Sostenido</h3>
+      <div class="gesture-card">
+        <span class="note-name">#</span>
+        <span class="gesture-desc">Muñeca arriba (para C, D, F, G, A)</span>
+        <span class="hand-visual" style="width:48px;height:48px"><span class="hand-svg" data-hand="wrist-up"></span></span>
+      </div>
+    </div>
 
-    <h3>Mano izquierda — tipo de acorde</h3>
-    <table>
-      <thead>
-        <tr><th>Acorde</th><th>Gesto</th><th>Figura</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Mayor</td><td>Cuatro dedos abajo, pulgar abajo (puño relajado)</td><td class="hand-col"><span class="hand-svg" data-hand="00000"></span></td></tr>
-        <tr><td>Menor</td><td>Cuatro dedos arriba; el pulgar no importa (dibujo: pulgar abajo)</td><td class="hand-col"><span class="hand-svg" data-hand="01111"></span></td></tr>
-        <tr><td>Disminuido</td><td>Solo índice arriba; pulgar abajo</td><td class="hand-col"><span class="hand-svg" data-hand="01000"></span></td></tr>
-        <tr><td>Aumentado</td><td>Solo pulgar arriba; índice, medio, anular y meñique abajo</td><td class="hand-col"><span class="hand-svg" data-hand="10000"></span></td></tr>
-        <tr><td>Maj7</td><td>Pulgar + meñique arriba; índice, medio y anular abajo</td><td class="hand-col"><span class="hand-svg" data-hand="10001"></span></td></tr>
-        <tr><td>7</td><td>Índice + medio arriba; pulgar abajo</td><td class="hand-col"><span class="hand-svg" data-hand="01100"></span></td></tr>
-        <tr><td>m7</td><td>Solo meñique arriba; pulgar abajo</td><td class="hand-col"><span class="hand-svg" data-hand="00001"></span></td></tr>
-        <tr><td>m7(b5)</td><td>Índice + meñique arriba; pulgar abajo</td><td class="hand-col"><span class="hand-svg" data-hand="01001"></span></td></tr>
-        <tr><td>dim7</td><td>Pulgar + índice + medio + anular arriba; <strong>solo meñique abajo</strong></td><td class="hand-col"><span class="hand-svg" data-hand="11110"></span></td></tr>
-      </tbody>
-    </table>
-    <p>Otras combinaciones no válidas no suenan hasta que el gesto sea claro.</p>
+    <div class="gesture-section">
+      <h3>Mano izquierda — Tipos de acorde</h3>
+      <div class="chord-section">
+        <div class="chord-item"><span class="chord-name">Mayor</span><span class="chord-visual"><span class="hand-svg" data-hand="00000"></span></span></div>
+        <div class="chord-item"><span class="chord-name">Menor</span><span class="chord-visual"><span class="hand-svg" data-hand="01111"></span></span></div>
+        <div class="chord-item"><span class="chord-name">Dim</span><span class="chord-visual"><span class="hand-svg" data-hand="01000"></span></span></div>
+        <div class="chord-item"><span class="chord-name">Aug</span><span class="chord-visual"><span class="hand-svg" data-hand="10000"></span></span></div>
+        <div class="chord-item"><span class="chord-name">Maj7</span><span class="chord-visual"><span class="hand-svg" data-hand="10001"></span></span></div>
+        <div class="chord-item"><span class="chord-name">7</span><span class="chord-visual"><span class="hand-svg" data-hand="01100"></span></span></div>
+        <div class="chord-item"><span class="chord-name">m7</span><span class="chord-visual"><span class="hand-svg" data-hand="00001"></span></span></div>
+        <div class="chord-item"><span class="chord-name">m7♭5</span><span class="chord-visual"><span class="hand-svg" data-hand="01001"></span></span></div>
+        <div class="chord-item"><span class="chord-name">dim7</span><span class="chord-visual"><span class="hand-svg" data-hand="11110"></span></span></div>
+      </div>
+    </div>
 
-    <h3>Mano izquierda — cutoff / tono</h3>
-    <table>
-      <thead>
-        <tr><th>Control</th><th>Gesto</th><th>Figura</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Cutoff −100…+100</td>
-          <td>Altura de la <strong>muñeca</strong> (arriba / centro / abajo en el rango útil)</td>
-          <td class="hand-col"><span class="hand-svg" data-hand="cutoff-y"></span></td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="gesture-section">
+      <h3>Mano izquierda — Cutoff</h3>
+      <div class="gesture-card">
+        <span class="note-name">EQ</span>
+        <span class="gesture-desc">Altura de muñeca (−100 a +100)</span>
+        <span class="hand-visual" style="width:48px;height:48px"><span class="hand-svg" data-hand="cutoff-y"></span></span>
+      </div>
+    </div>
 
-    <p class="glossary-note">El acorde suena cuando hay nota estable (<strong>mano derecha</strong>) y tipo de acorde válido (<strong>mano izquierda</strong>) a la vez.</p>
+    <p class="glossary-footer">
+      <strong>Importante:</strong> El acorde suena cuando hay nota estable (mano derecha) Y tipo de acorde válido (mano izquierda) a la vez.
+    </p>
   </div>
 </div>
 
@@ -317,132 +679,194 @@
   <button class="sound-btn" data-preset-index="4">Sound 5</button>
 </div>
 
-<!-- Tone -->
 <script src="https://unpkg.com/tone"></script>
-
-<!-- MediaPipe (IMPORTANTE) -->
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 
 <script>
-  (function () {
-    const STROKE_UP = "#5fd488";
-    const STROKE_DOWN = "#5c5c5c";
-    const PALM_FILL = "#242424";
-    const PALM_STROKE = "#666";
+(function () {
+  const colors = {
+    up: "#14b8a6",
+    upLight: "#5eead4",
+    down: "#475569",
+    downDark: "#334155",
+    palm: "#334155",
+    palmDark: "#1e293b",
+    outline: "#64748b"
+  };
 
-    function createHandSVG(code) {
-      const th = code[0] === "1";
-      const idx = code[1] === "1";
-      const mid = code[2] === "1";
-      const ring = code[3] === "1";
-      const pnk = code[4] === "1";
-      const baseY = 82;
-      const curl = 14;
-      const hIdx = 40;
-      const hMid = 48;
-      const hRing = 36;
-      const hPnk = 26;
-      const swNorm = 5;
-      const swPnk = 3.2;
-      const swThumb = 6.5;
-
-      const finger = (x, ext, hUp, sw) => {
-        const h = ext ? hUp : curl;
-        const c = ext ? STROKE_UP : STROKE_DOWN;
-        return `<line x1="${x}" y1="${baseY}" x2="${x}" y2="${baseY - h}" stroke="${c}" stroke-width="${sw}" stroke-linecap="round"/>`;
-      };
-
-      const thumb = th
-        ? `<path d="M 42 ${baseY} C 28 78 14 62 8 46 C 6 40 12 34 18 38" stroke="${STROKE_UP}" stroke-width="${swThumb}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
-        : `<path d="M 42 ${baseY} C 36 76 32 72 30 66 C 28 62 32 58 36 60" stroke="${STROKE_DOWN}" stroke-width="5.2" fill="none" stroke-linecap="round"/>`;
-
-      const palm = `<path d="M 46 ${baseY + 2} C 44 88 52 94 68 94 C 88 94 98 88 96 ${baseY + 2} C 94 76 52 72 46 ${baseY + 2} Z" fill="${PALM_FILL}" stroke="${PALM_STROKE}" stroke-width="1.4"/>`;
-
-      const labels = `
-        <text x="12" y="104" text-anchor="middle" fill="#7adb9a" font-size="9" font-weight="bold" font-family="Arial,sans-serif">P</text>
-        <text x="50" y="104" text-anchor="middle" fill="#999" font-size="8" font-family="Arial,sans-serif">I</text>
-        <text x="64" y="104" text-anchor="middle" fill="#999" font-size="8" font-family="Arial,sans-serif">M</text>
-        <text x="78" y="104" text-anchor="middle" fill="#999" font-size="8" font-family="Arial,sans-serif">A</text>
-        <text x="94" y="104" text-anchor="middle" fill="#7adb9a" font-size="9" font-weight="bold" font-family="Arial,sans-serif">Meñ</text>
-      `;
-
-      return `<svg viewBox="0 0 108 112" width="80" height="82" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-        ${palm}
-        ${thumb}
-        ${finger(50, idx, hIdx, swNorm)}
-        ${finger(64, mid, hMid, swNorm)}
-        ${finger(78, ring, hRing, swNorm)}
-        ${finger(92, pnk, hPnk, swPnk)}
-        ${labels}
-      </svg>`;
+  function fingerPath(x, extended, len, width, isThumb = false) {
+    const baseY = 82;
+    const tipY = baseY - len;
+    
+    if (isThumb) {
+      if (extended) {
+        return `<path d="M${x+8},${baseY-2} C${x+4},${baseY-len*0.4} ${x-4},${baseY-len*0.7} ${x-2},${tipY+6} C${x-4},${tipY+2} ${x},${tipY-4} ${x+4},${tipY-2} C${x+8},${tipY} ${x+12},${baseY-len*0.3} ${x+14},${baseY}" fill="currentColor"/>`;
+      } else {
+        const curl = len * 0.35;
+        return `<path d="M${x+8},${baseY-2} C${x+6},${baseY-curl} ${x-2},${baseY-curl-4} ${x+2},${baseY-curl-6} C${x+6},${baseY-curl-8} ${x+10},${baseY-curl-4} ${x+14},${baseY}" fill="currentColor"/>`;
+      }
     }
-
-    function wristUpSVG() {
-      return `<svg viewBox="0 0 108 96" width="76" height="68" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <text x="54" y="20" text-anchor="middle" fill="#5fd488" font-size="12" font-family="Arial,sans-serif">arriba</text>
-        <path d="M 54 78 L 54 32" stroke="#888" stroke-width="2" stroke-dasharray="4 3"/>
-        <polygon points="54,26 48,36 60,36" fill="#5fd488"/>
-        <ellipse cx="54" cy="78" rx="24" ry="11" fill="${PALM_FILL}" stroke="${PALM_STROKE}" stroke-width="1.5"/>
-        <line x1="46" y1="72" x2="44" y2="50" stroke="${STROKE_DOWN}" stroke-width="4" stroke-linecap="round"/>
-        <line x1="54" y1="70" x2="54" y2="48" stroke="${STROKE_DOWN}" stroke-width="4" stroke-linecap="round"/>
-        <line x1="62" y1="72" x2="64" y2="50" stroke="${STROKE_DOWN}" stroke-width="4" stroke-linecap="round"/>
-        <text x="54" y="94" text-anchor="middle" fill="#888" font-size="10" font-family="Arial,sans-serif">muñeca alta</text>
-      </svg>`;
+    
+    if (extended) {
+      return `<path d="M${x-width/2},${baseY} L${x-width/2+1},${tipY+8} C${x-width/2},${tipY} ${x},${tipY-4} ${x+width/2},${tipY+2} L${x+width/2+1},${baseY} Z" fill="currentColor"/>`;
+    } else {
+      const curl = len * 0.35;
+      return `<path d="M${x-width/2},${baseY} C${x-width/2},${baseY-curl} ${x-width/2},${baseY-curl-4} ${x},${baseY-curl-4} C${x+width/2},${baseY-curl-4} ${x+width/2},${baseY-curl} ${x+width/2+1},${baseY} Z" fill="currentColor"/>`;
     }
+  }
 
-    function cutoffYSVG() {
-      return `<svg viewBox="0 0 108 96" width="76" height="68" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <defs>
-          <marker id="cutoff-arr-up" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto">
-            <path d="M0,0 L7,3.5 L0,7 Z" fill="#5fd488"/>
-          </marker>
-          <marker id="cutoff-arr-down" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto">
-            <path d="M7,0 L0,3.5 L7,7 Z" fill="#5fd488"/>
-          </marker>
-        </defs>
-        <text x="30" y="18" text-anchor="middle" fill="#aaa" font-size="10" font-family="Arial,sans-serif">+100</text>
-        <line x1="30" y1="24" x2="30" y2="72" stroke="#777" stroke-width="2" marker-start="url(#cutoff-arr-down)" marker-end="url(#cutoff-arr-up)"/>
-        <text x="30" y="88" text-anchor="middle" fill="#aaa" font-size="10" font-family="Arial,sans-serif">−100</text>
-        <ellipse cx="72" cy="48" rx="18" ry="11" fill="${PALM_FILL}" stroke="${PALM_STROKE}" stroke-width="1.5"/>
-        <text x="72" y="52" text-anchor="middle" fill="#bbb" font-size="9" font-family="Arial,sans-serif">muñeca</text>
-      </svg>`;
-    }
-
-    function fillHandDiagrams() {
-      document.querySelectorAll(".hand-svg").forEach((el) => {
-        const code = el.getAttribute("data-hand") || "";
-        if (code === "wrist-up") el.innerHTML = wristUpSVG();
-        else if (code === "cutoff-y") el.innerHTML = cutoffYSVG();
-        else if (/^[01]{5}$/.test(code)) el.innerHTML = createHandSVG(code);
-      });
-    }
-
-    fillHandDiagrams();
-
-    const openBtn = document.getElementById("glossary-open");
-    const drawer = document.getElementById("glossary-drawer");
-    const closeBtn = document.getElementById("glossary-close");
-
-    function openGlossary() {
-      drawer.classList.add("is-open");
-      closeBtn.focus();
-    }
-
-    function closeGlossary() {
-      drawer.classList.remove("is-open");
-      openBtn.focus();
-    }
-
-    openBtn.addEventListener("click", openGlossary);
-    closeBtn.addEventListener("click", closeGlossary);
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && drawer.classList.contains("is-open")) closeGlossary();
+  function createCleanHand(code) {
+    const th = code[0] === "1";
+    const idx = code[1] === "1";
+    const mid = code[2] === "1";
+    const ring = code[3] === "1";
+    const pnk = code[4] === "1";
+    
+    const fingerConfigs = [
+      { id: "index", up: idx, x: 42, len: 38, width: 7 },
+      { id: "middle", up: mid, x: 58, len: 44, width: 7.5 },
+      { id: "ring", up: ring, x: 74, len: 38, width: 7 },
+      { id: "pinky", up: pnk, x: 90, len: 28, width: 6 }
+    ];
+    
+    let fingersSVG = "";
+    fingerConfigs.forEach(f => {
+      const color = f.up ? colors.up : colors.down;
+      const len = f.up ? f.len : f.len * 0.7;
+      const tipY = 82 - len;
+      const curl = f.len * 0.35;
+      
+      if (f.up) {
+        fingersSVG += `
+          <g class="finger-up" data-finger="${f.id}">
+            <path d="M${f.x-3},82 L${f.x-3},${82-f.len*0.65}" stroke="${colors.upLight}" stroke-width="${f.width}" stroke-linecap="round"/>
+            <path d="M${f.x-3},${82-f.len*0.65} L${f.x-3},${82-f.len+2}" stroke="${colors.up}" stroke-width="${f.width-1}" stroke-linecap="round"/>
+            <ellipse cx="${f.x-3}" cy="${82-f.len-4}" rx="${f.width/2+1}" ry="${f.width/2+2}" fill="${colors.up}"/>
+          </g>
+        `;
+      } else {
+        fingersSVG += `
+          <g class="finger-down" data-finger="${f.id}">
+            <path d="M${f.x-3},82 Q${f.x-3},${82-curl} ${f.x-3},${82-curl}" stroke="${colors.down}" stroke-width="${f.width}" stroke-linecap="round" fill="none"/>
+            <ellipse cx="${f.x-3}" cy="${82-curl+4}" rx="${f.width/2+1.5}" ry="${f.width/2+2}" fill="${colors.down}"/>
+          </g>
+        `;
+      }
     });
-  })();
+    
+    if (th) {
+      fingersSVG += `
+        <g class="finger-up" data-finger="thumb">
+          <path d="M32,75 C26,65 18,54 16,42 C15,36 20,30 26,32 C32,34 36,44 38,54" stroke="${colors.upLight}" stroke-width="6" stroke-linecap="round" fill="none"/>
+          <ellipse cx="22" cy="32" rx="5" ry="4" fill="${colors.up}"/>
+        </g>
+      `;
+    } else {
+      fingersSVG += `
+        <g class="finger-down" data-finger="thumb">
+          <path d="M32,75 C28,68 24,62 24,56 C24,50 30,46 36,48 C42,50 42,60 40,70" stroke="${colors.down}" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+          <ellipse cx="32" cy="48" rx="4" ry="3.5" fill="${colors.down}"/>
+        </g>
+      `;
+    }
+    
+    const palm = `
+      <defs>
+        <linearGradient id="palmGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="${colors.palm}"/>
+          <stop offset="100%" stop-color="${colors.palmDark}"/>
+        </linearGradient>
+      </defs>
+      <path d="M24,72 Q18,82 24,94 Q38,104 68,104 Q98,104 112,94 Q118,82 112,70 Q108,58 88,54 Q68,50 48,54 Q28,58 24,72 Z" fill="url(#palmGrad)" stroke="${colors.outline}" stroke-width="0.6"/>
+      <path d="M38,76 Q50,80 64,80" stroke="${colors.palmDark}" stroke-width="1" fill="none" opacity="0.5"/>
+      <path d="M40,88 Q56,94 76,88" stroke="${colors.palmDark}" stroke-width="1" fill="none" opacity="0.4"/>
+    `;
+    
+    const labels = `
+      <text x="22" y="114" text-anchor="middle" fill="${colors.up}" font-size="7.5" font-weight="600" font-family="system-ui">P</text>
+      <text x="42" y="114" text-anchor="middle" fill="#94a3b8" font-size="6.5" font-family="system-ui">I</text>
+      <text x="58" y="114" text-anchor="middle" fill="#94a3b8" font-size="6.5" font-family="system-ui">M</text>
+      <text x="74" y="114" text-anchor="middle" fill="#94a3b8" font-size="6.5" font-family="system-ui">A</text>
+      <text x="90" y="114" text-anchor="middle" fill="#94a3b8" font-size="6.5" font-family="system-ui">Me</text>
+    `;
+    
+    return `<svg viewBox="0 0 130 120" width="70" height="64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      ${palm}
+      ${fingersSVG}
+      ${labels}
+    </svg>`;
+  }
+
+  function wristUpSVG() {
+    return `<svg viewBox="0 0 130 120" width="54" height="50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <linearGradient id="wristGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#475569"/>
+          <stop offset="100%" stop-color="#1e293b"/>
+        </linearGradient>
+      </defs>
+      <text x="65" y="16" text-anchor="middle" fill="${colors.up}" font-size="9" font-family="system-ui" font-weight="600">↑</text>
+      <line x1="65" y1="22" x2="65" y2="78" stroke="${colors.down}" stroke-width="1.5" stroke-dasharray="3 2"/>
+      <polygon points="65,18 61,26 69,26" fill="${colors.up}"/>
+      <ellipse cx="65" cy="86" rx="24" ry="10" fill="url(#wristGrad2)" stroke="${colors.outline}" stroke-width="0.5"/>
+      <line x1="49" y1="80" x2="49" y2="56" stroke="${colors.down}" stroke-width="3.5" stroke-linecap="round"/>
+      <line x1="65" y1="76" x2="65" y2="52" stroke="${colors.down}" stroke-width="3.5" stroke-linecap="round"/>
+      <line x1="81" y1="80" x2="81" y2="56" stroke="${colors.down}" stroke-width="3.5" stroke-linecap="round"/>
+      <text x="65" y="104" text-anchor="middle" fill="#94a3b8" font-size="7" font-family="system-ui">muñeca alta</text>
+    </svg>`;
+  }
+
+  function cutoffYsvg() {
+    return `<svg viewBox="0 0 130 120" width="54" height="50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <text x="42" y="14" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="system-ui">+100</text>
+      <line x1="42" y1="20" x2="42" y2="82" stroke="${colors.down}" stroke-width="1.5"/>
+      <text x="42" y="106" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="system-ui">−100</text>
+      <ellipse cx="82" cy="50" rx="16" ry="10" fill="${colors.palm}" stroke="${colors.outline}" stroke-width="0.5"/>
+      <path d="M72,46 Q82,42 92,52" stroke="${colors.up}" stroke-width="1.5" fill="none" marker-end="url(#arr2)"/>
+      <defs><marker id="arr2" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
+        <path d="M0,0 L5,2.5 L0,5 Z" fill="${colors.up}"/>
+      </marker></defs>
+      <text x="82" y="70" text-anchor="middle" fill="#94a3b8" font-size="7" font-family="system-ui">muñeca</text>
+    </svg>`;
+  }
+
+  function fillHandDiagrams() {
+    document.querySelectorAll(".hand-svg").forEach((el) => {
+      const code = el.getAttribute("data-hand") || "";
+      if (code === "wrist-up") el.innerHTML = wristUpSVG();
+      else if (code === "cutoff-y") el.innerHTML = cutoffYsvg();
+      else if (/^[01]{5}$/.test(code)) el.innerHTML = createCleanHand(code);
+    });
+  }
+
+  fillHandDiagrams();
+
+  const openBtn = document.getElementById("glossary-open");
+  const drawer = document.getElementById("glossary-drawer");
+  const closeBtn = document.getElementById("glossary-close");
+  const backdrop = document.getElementById("drawer-backdrop");
+
+  function openGlossary() {
+    drawer.classList.add("is-open");
+    backdrop.classList.add("is-open");
+    setTimeout(() => closeBtn.focus(), 150);
+  }
+
+  function closeGlossary() {
+    drawer.classList.remove("is-open");
+    backdrop.classList.remove("is-open");
+    openBtn.focus();
+  }
+
+  openBtn.addEventListener("click", openGlossary);
+  closeBtn.addEventListener("click", closeGlossary);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && drawer.classList.contains("is-open")) closeGlossary();
+  });
+})();
 </script>
 
-<!-- Tu código (SIN module) -->
 <script src="./main.js"></script>
 
 </body>

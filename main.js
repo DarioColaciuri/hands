@@ -201,7 +201,9 @@ let lastNoteChangeTime = 0;
 
 let activeChord = null;
 
+// ----------------------
 function mapWristToCutoff(y) {
+  if (y === null || y === undefined || isNaN(y)) return 0;
   const normalized = (y - CONTROL_TOP_Y) / (CONTROL_BOTTOM_Y - CONTROL_TOP_Y);
   const clamped = Math.max(0, Math.min(1, normalized));
   return Math.round((0.5 - clamped) * 200);
@@ -250,13 +252,6 @@ function formatNoteDisplay(note) {
   return map[note] || note;
 }
 
-// Mano de acordes (derecha): pulgar + índice/medio/anular/meñique (extendido = arriba).
-// Pulgar: mismo criterio que getFingers (mano derecha).
-// Mayor: los 4 dedos abajo. Solo pulgar arriba + resto abajo = Aumentado.
-// Menor: los 4 dedos arriba (pulgar da igual).
-// Dim: solo índice (pulgar abajo) | m7: solo meñique | 7: índice+medio | m7(b5): índice+meñique
-// Pulgar arriba: Maj7 = pulgar + meñique (resto abajo)
-// dim7: pulgar + índice + medio + anular arriba, meñique abajo (cómodo, tres dedos + pulgar)
 function getChordType(f) {
   const th = f.thumb;
   const idx = f.index;
@@ -279,8 +274,6 @@ function getChordType(f) {
   return null;
 }
 
-const CHROMATIC = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
-
 const CHORD_SEMITONES = {
   Major: [0, 4, 7],
   Minor: [0, 3, 7],
@@ -293,21 +286,21 @@ const CHORD_SEMITONES = {
   "m7(b5)": [0, 3, 6, 10]
 };
 
-function midiToNoteString(midi) {
-  const pc = ((midi % 12) + 12) % 12;
-  const octave = Math.floor(midi / 12) - 1;
-  return CHROMATIC[pc] + octave;
-}
-
 function buildChord(root, type) {
-  const i = CHROMATIC.indexOf(root);
+  const scale = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+  const i = scale.indexOf(root);
+
   if (i === -1) return [];
 
   const intervals = CHORD_SEMITONES[type];
   if (!intervals) return [];
 
-  const rootMidi = 60 + i;
-  return intervals.map((semi) => midiToNoteString(rootMidi + semi));
+  const baseOctave = 4;
+  return intervals.map((semi, idx) => {
+    const noteIdx = (i + semi) % 12;
+    const octave = baseOctave + Math.floor((i + semi) / 12);
+    return scale[noteIdx] + octave;
+  });
 }
 
 // ----------------------
@@ -339,7 +332,6 @@ hands.onResults((results) => {
       const fingers = getFingers(landmarks, hand);
       const color = hand === "Right" ? "blue" : "green";
 
-      // puntos (no los toco)
       for (const p of landmarks) {
         ctx.beginPath();
         ctx.arc(p.x * canvas.width, p.y * canvas.height, 5, 0, 2 * Math.PI);
@@ -361,8 +353,6 @@ hands.onResults((results) => {
     }
   }
 
-  // 🎛️ CONTROL BIPOLAR: centro 0 sin efecto
-  // +100 recorta graves, -100 recorta agudos.
   let cutoffValue = 0;
 
   if (cutoffControl !== null) {
@@ -437,61 +427,89 @@ hands.onResults((results) => {
     }
   }
 
-  // texto
   if (stableNote && stableType) {
-    ctx.fillStyle = "white";
-    ctx.font = "30px Arial";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+    ctx.font = "600 28px system-ui, sans-serif";
     ctx.textAlign = "center";
+    ctx.shadowColor = "rgba(99, 102, 241, 0.5)";
+    ctx.shadowBlur = 20;
     ctx.fillText(
       `${formatNoteDisplay(stableNote)} ${stableType}`,
       canvas.width / 2,
       40
     );
+    ctx.shadowBlur = 0;
+  } else {
+    ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+    ctx.font = "16px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText(
+      "Buscando gesto...",
+      canvas.width / 2,
+      40
+    );
   }
 
-  // barra cutoff (-100 a 100, centro = 0)
   const barWidth = 200;
-  const barHeight = 20;
+  const barHeight = 18;
   const x = canvas.width / 2 - barWidth / 2;
-  const y = canvas.height - 40;
+  const y = canvas.height - 50;
   const centerX = x + barWidth / 2;
   const fillWidth = Math.abs(cutoffValue) / 100 * (barWidth / 2);
 
-  ctx.strokeStyle = "white";
-  ctx.strokeRect(x, y, barWidth, barHeight);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+  ctx.fillRect(x - 4, y - 20, barWidth + 8, 60);
 
-  ctx.fillStyle = "white";
+  ctx.fillStyle = "rgba(99, 102, 241, 0.15)";
+  ctx.fillRect(x - 2, y - 2, barWidth + 4, barHeight + 4);
+  ctx.strokeStyle = "rgba(99, 102, 241, 0.4)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x - 2, y - 2, barWidth + 4, barHeight + 4);
+
+  ctx.fillStyle = "rgba(34, 211, 238, 0.8)";
   if (cutoffValue >= 0) {
     ctx.fillRect(centerX, y, fillWidth, barHeight);
   } else {
     ctx.fillRect(centerX - fillWidth, y, fillWidth, barHeight);
   }
 
-  // linea central de referencia (0)
-  ctx.beginPath();
-  ctx.moveTo(centerX, y);
-  ctx.lineTo(centerX, y + barHeight);
-  ctx.stroke();
+  ctx.fillStyle = "rgba(34, 211, 238, 0.6)";
+  ctx.fillRect(centerX - 1, y - 2, 2, barHeight + 4);
 
-  ctx.fillStyle = "white";
-  ctx.font = "18px Arial";
+  ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+  ctx.font = "12px system-ui";
   ctx.textAlign = "center";
   ctx.fillText(`Sound: ${presets[currentPresetIndex].name}`, canvas.width / 2, y - 28);
 
+  ctx.fillStyle = "rgba(34, 211, 238, 0.8)";
   ctx.fillText(
     `Cutoff: ${cutoffValue}`,
     canvas.width / 2,
-    y - 5
+    y - 8
   );
 
-  ctx.strokeStyle = "white";
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+  ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(0, canvas.height / 2);
   ctx.lineTo(canvas.width, canvas.height / 2);
   ctx.stroke();
 });
 
-// cámara
+// ----------------------
+// Camera Status
+// ----------------------
+const statusEl = document.getElementById("camera-status");
+const statusText = statusEl ? statusEl.querySelector(".status-text") : null;
+
+function setCameraStatus(status, text) {
+  if (!statusEl) return;
+  statusEl.className = "status-indicator " + status;
+  if (text && statusText) {
+    statusText.textContent = text;
+  }
+}
+
 const camera = new Camera(video, {
   onFrame: async () => {
     await hands.send({ image: video });
@@ -500,4 +518,14 @@ const camera = new Camera(video, {
   height: 480
 });
 
-camera.start();
+camera.start()
+  .then(() => {
+    setCameraStatus("ready", "Listo");
+    setTimeout(() => {
+      if (statusEl) statusEl.classList.add("hidden");
+    }, 2500);
+  })
+  .catch((err) => {
+    setCameraStatus("error", "Cámara no disponible");
+    console.error("Camera error:", err);
+  });
